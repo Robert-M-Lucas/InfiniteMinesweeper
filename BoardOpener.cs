@@ -6,27 +6,30 @@ public static class BoardOpener
 {
     public static void Open(GameManagerScript game_manager, Vector2Int chunk_pos, Vector2Int pos)
     {
-        if (game_manager.cursor == 0)
+        if (game_manager.cursor == 0) // Default cursor
+        if (game_manager.cursor == 0) // Default cursor
         {
+            // If new game guarantee 3x3 around first click is safe
             if (game_manager.newGame)
             {
                 game_manager.newGame = false;
-                ChangeCell(game_manager, 0x0, chunk_pos, pos);
+                ChangeCell(game_manager, CellValues.CLOSED, chunk_pos, pos);
                 foreach (Vector2Int move in Vector2IntExt.Around)
                 {
-                    ChangeCell(game_manager, 0x0, chunk_pos, pos + move);
+                    ChangeCell(game_manager, CellValues.CLOSED, chunk_pos, pos + move);
                 }
             }
-            if (GetCell(game_manager, chunk_pos, pos) >= 0x1 && GetCell(game_manager, chunk_pos, pos) <= 0x8)
+            // If tapped on number
+            if (CellValues.IsNumber(GetCell(game_manager, chunk_pos, pos)))
             {
                 foreach (Vector2Int move in Vector2IntExt.Around)
                 {
                     Ant(game_manager, pos + move, chunk_pos, false);
                 }
             }
-            else if (GetCell(game_manager, chunk_pos, pos) == 0xC)
+            // If tapped bomb
+            else if (GetCell(game_manager, chunk_pos, pos) == CellValues.BOMB_CLOSED)
             {
-                // Bomb
                 game_manager.SavePrefs.Score -= 500;
                 game_manager.menuController.UpdateScore(game_manager.SavePrefs.Score);
                 game_manager.shake.ShakeMe();
@@ -37,47 +40,16 @@ public static class BoardOpener
             {
                 Ant(game_manager, pos, chunk_pos,false);
             }
-
             
             game_manager.menuController.UpdateScore(game_manager.SavePrefs.Score);
         }
-        else if (game_manager.cursor == 1)
+        else if (game_manager.cursor == 1) // Flag cursor
         {
-            if (GetCell(game_manager, chunk_pos, pos) == 0xA)
-            {
-                ChangeCell(game_manager, 0x0, chunk_pos, pos);
-            }
-            else if (GetCell(game_manager, chunk_pos, pos) == 0xE)
-            {
-                ChangeCell(game_manager, 0xC, chunk_pos, pos);
-            }
-            else if (GetCell(game_manager, chunk_pos, pos) == 0xC)
-            {
-                ChangeCell(game_manager, 0xE, chunk_pos, pos);
-            }
-            else if (GetCell(game_manager, chunk_pos, pos) == 0x0)
-            {
-                ChangeCell(game_manager, 0xA, chunk_pos, pos);
-            }
+            ChangeCell(game_manager, CellValues.ToggleFlag(GetCell(game_manager, chunk_pos, pos)), chunk_pos, pos);
         }
-        else
+        else // Question cursor
         {
-            if (GetCell(game_manager, chunk_pos, pos) == 0xB)
-            {
-                ChangeCell(game_manager, 0x0, chunk_pos, pos);
-            }
-            else if (GetCell(game_manager, chunk_pos, pos) == 0xF)
-            {
-                ChangeCell(game_manager, 0xC, chunk_pos, pos);
-            }
-            else if (GetCell(game_manager, chunk_pos, pos) == 0xC)
-            {
-                ChangeCell(game_manager, 0xF, chunk_pos, pos);
-            }
-            else if (GetCell(game_manager, chunk_pos, pos) == 0x0)
-            {
-                ChangeCell(game_manager, 0xB, chunk_pos, pos);
-            }
+            ChangeCell(game_manager, CellValues.ToggleQuestion(GetCell(game_manager, chunk_pos, pos)), chunk_pos, pos);
         }
 
         /*
@@ -117,7 +89,7 @@ public static class BoardOpener
         game_manager.poolManager.ReleaseSprite(game_manager.boardRenderer.ShowingCache[new Tuple<int, int>(chunk_pos.x, chunk_pos.y)][(pos.y * game_manager.boardRenderer.ChunkSize) + pos.x]);
         
         game_manager.boardRenderer.ShowingCache[new Tuple<int, int>(chunk_pos.x, chunk_pos.y)][(pos.y * game_manager.boardRenderer.ChunkSize) + pos.x] =
-            game_manager.boardRenderer.RenderCell(new_value, chunk_pos.x, chunk_pos.y, pos.x, pos.y);
+        game_manager.boardRenderer.RenderCell(new_value, chunk_pos.x, chunk_pos.y, pos.x, pos.y);
     }
 
     public static byte GetCell(GameManagerScript game_manager, Vector2Int chunk_pos, Vector2Int pos)
@@ -150,23 +122,23 @@ public static class BoardOpener
         
 
         byte cell = GetCell(game_manager, chunk_pos, pos);
-        if (cell == 0x0)
+        if (cell == CellValues.CLOSED)
         {
-            int neigbours = 0;
+            byte neigbours = 0;
             foreach (Vector2Int move in Vector2IntExt.Around)
             {
-                if (GetCell(game_manager, chunk_pos, pos + move) >= 0xC) { neigbours += 1; }
+                if (CellValues.IsBomb(GetCell(game_manager, chunk_pos, pos + move))) { neigbours += 1; }
             }
 
             if (neigbours == 0) { 
-                neigbours = 9; 
+                neigbours = CellValues.OPEN;
             }
 
             game_manager.SavePrefs.Score += 1;        
 
-            ChangeCell(game_manager, (byte)neigbours, chunk_pos, pos);
+            ChangeCell(game_manager, neigbours, chunk_pos, pos);
 
-            if (neigbours == 9)
+            if (neigbours == CellValues.OPEN)
             {
                 foreach (Vector2Int move in Vector2IntExt.Around)
                 {
@@ -174,13 +146,13 @@ public static class BoardOpener
                 }
             }
         }
-        else if (cell == 0xC && avoid_bomb == false)
+        else if (cell == CellValues.BOMB_CLOSED && avoid_bomb == false)
         {
             // Bomb
             game_manager.SavePrefs.Score -= 500;
             game_manager.menuController.UpdateScore(game_manager.SavePrefs.Score);
             game_manager.shake.ShakeMe();
-            ChangeCell(game_manager, 0xD, chunk_pos, pos);
+            ChangeCell(game_manager, CellValues.BOMB_OPEN, chunk_pos, pos);
         }
     }
 }

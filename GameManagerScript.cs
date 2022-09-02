@@ -9,25 +9,8 @@ using UnityEngine.Analytics;
 using Debug = UnityEngine.Debug;
 using System.Threading;
 using System.Diagnostics;
+using static UnityEditor.PlayerSettings;
 
-/* 0 - nothing
- * 1 - 1
- * 2 - 2
- * 3 - 3
- * 4 - 4
- * 5 - 5
- * 6 - 6
- * 7 - 7
- * 8 - 8
- * 9 - open
- * A - flag
- * B - ?
- * C - Bomb (closed)
- * D - Bomb (Open)
- * E - Bomb Flag
- * F - Bomb ?
-
-*/// 1 byte = 2 cells
 
 public class GameManagerScript : MonoBehaviour
 {
@@ -87,6 +70,7 @@ public class GameManagerScript : MonoBehaviour
 
     void Start()
     {
+        OnClickPrefab.SetActive(true);
         boardRenderer = new BoardRenderer(this);
         SaveSlot = PlayerPrefs.GetInt("SaveSlot");
         SaveSystem.TryLoad(this);
@@ -122,7 +106,7 @@ public class GameManagerScript : MonoBehaviour
         if (cursor != 0) { return; }
 
         Tuple<Vector2Int, Vector2Int> poss = boardRenderer.PosToPos(tap_pos);
-        if (BoardOpener.GetCell(this, poss.Item1, poss.Item2) == 0x0 || BoardOpener.GetCell(this, poss.Item1, poss.Item2) == 0xC)
+        if (BoardOpener.GetCell(this, poss.Item1, poss.Item2) == CellValues.CLOSED || BoardOpener.GetCell(this, poss.Item1, poss.Item2) == CellValues.BOMB_CLOSED)
         {
             OnClickPrefab.transform.position = new Vector3(((poss.Item1.x * boardRenderer.ChunkSize) - (boardRenderer.ChunkSize / 2)) + poss.Item2.x,
             ((poss.Item1.y * boardRenderer.ChunkSize) - (boardRenderer.ChunkSize / 2)) + (boardRenderer.ChunkSize - poss.Item2.y),
