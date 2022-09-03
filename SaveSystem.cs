@@ -47,11 +47,8 @@ public static class SaveSystem{
             gameManager.boardRenderer.Board = (Dictionary<Tuple<int, int>, Chunk>)formatter.Deserialize(fs);
             fs.Close();
 
-            /*if (PlayerPrefs.HasKey("x"))
-            {
-                cam.transform.position = new Vector3(PlayerPrefs.GetInt("x"), PlayerPrefs.GetInt("y"), cam.transform.position.z);
-            }*/
-            gameManager.SavePrefs = JsonUtility.FromJson<JsonSave>(System.IO.File.ReadAllText(gameManager.DataPath + "/save" + gameManager.SaveSlot.ToString() + ".json"));
+
+            gameManager.SavePrefs = JsonUtility.FromJson<JsonSave>(File.ReadAllText(gameManager.DataPath + "/save" + gameManager.SaveSlot.ToString() + ".json"));
 
             gameManager.newGame = false;
         }

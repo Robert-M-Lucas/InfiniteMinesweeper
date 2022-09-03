@@ -15,9 +15,14 @@ public class BoardRenderer {
         _gameManager = gameManager;
     }
 
+    /// <summary>
+    /// Gets or creates a specified chunk
+    /// </summary>
+    /// <param name="x">Chunk X position</param>
+    /// <param name="y">Chunk Y position</param>
+    /// <returns>Chunk</returns>
     public Chunk RenderBoard(int x, int y)
     {
-        //print("Render call");
         if (Board.ContainsKey(new Tuple<int, int>(x,y)))
         {
             return Board[new Tuple<int, int>(x, y)];
@@ -27,7 +32,12 @@ public class BoardRenderer {
         return chunk;
     }
 
-    public Tuple<Vector2Int, Vector2Int> PosToPos(Vector2 tap_pos)
+    /// <summary>
+    /// Converts a tap position to the corrisponding chunk and cell
+    /// </summary>
+    /// <param name="tap_pos">Position of tap on screen</param>
+    /// <returns>Tuple with the chunk position and the cell position</returns>
+    public Tuple<Vector2Int, Vector2Int> ScreenToCellPos(Vector2 tap_pos)
     {
         Vector3 world_pos = _gameManager.cam.ScreenToWorldPoint(tap_pos) + new Vector3(ChunkSize / 2, -ChunkSize / 2) + new Vector3(0.5f, -0.5f);
         Vector2Int chunk_pos = Vector2Int.FloorToInt(world_pos / ChunkSize) + new Vector2Int(0, 1);
@@ -58,38 +68,44 @@ public class BoardRenderer {
         return new Tuple<Vector2Int, Vector2Int>(chunk_pos, pos);
     }
 
+
     public SpriteRenderer RenderCell(byte cell, int x, int y, int nx, int ny)
     {
-        SpriteRenderer new_Block;
+        Sprite sprite_to_pull;
 
         if (cell == 0x0 | cell == 0xC)
         {
-            new_Block = _gameManager.poolManager.PullSprite(_gameManager.ClosedPrefab);
+            sprite_to_pull = _gameManager.ClosedPrefab;
         }
         else if (cell == 0x9)
         {
-            new_Block = _gameManager.poolManager.PullSprite(_gameManager.OpenPrefab);
+            sprite_to_pull = _gameManager.OpenPrefab;
         }
         else if (cell == 0xD)
         {
-            new_Block = _gameManager.poolManager.PullSprite(_gameManager.Bomb);
+            sprite_to_pull = _gameManager.Bomb;
         }
-        else if (cell == 0xA | cell == 0xE) { new_Block = _gameManager.poolManager.PullSprite(_gameManager.FlagPrefab); }
-        else if (cell == 0xB | cell == 0xF) { new_Block = _gameManager.poolManager.PullSprite(_gameManager.QPrefab); }
+        else if (cell == 0xA | cell == 0xE) { sprite_to_pull = _gameManager.FlagPrefab; }
+        else if (cell == 0xB | cell == 0xF) { sprite_to_pull = _gameManager.QPrefab; }
         else
         {
-            new_Block = _gameManager.poolManager.PullSprite(_gameManager.NumPrefabs[cell - 1]);
+            sprite_to_pull = _gameManager.NumPrefabs[cell - 1];
         }
 
-        new_Block.gameObject.SetActive(true);
-        new_Block.transform.position = new Vector3(((x * ChunkSize) - (ChunkSize / 2)) + nx, ((y * ChunkSize) - (ChunkSize / 2)) + (ChunkSize - ny), 0);
+        SpriteRenderer new_block = _gameManager.poolManager.PullSprite(sprite_to_pull);
 
-        return new_Block;
+        new_block.transform.position = new Vector3(((x * ChunkSize) - (ChunkSize / 2)) + nx, ((y * ChunkSize) - (ChunkSize / 2)) + (ChunkSize - ny), 0);
+
+        return new_block;
     }
 
-    void Show(int x, int y) 
+    /// <summary>
+    /// Shows a specified chunk
+    /// </summary>
+    /// <param name="x">Chunk X position</param>
+    /// <param name="y">Chunk Y position</param>
+    void ShowChunk(int x, int y) 
     {
-        //print("Show call");
         if (! Board.ContainsKey(new Tuple<int, int>(x, y)))
         {
             RenderBoard(x, y);
@@ -120,7 +136,12 @@ public class BoardRenderer {
         ShowingCache.Add(new Tuple<int, int>(x, y), cache);
     }
 
-    void Hide(int x, int y) 
+    /// <summary>
+    /// Hides a specified chunk
+    /// </summary>
+    /// <param name="x">Chunk X position</param>
+    /// <param name="y">Chunk Y position</param>
+    void HideChunk(int x, int y) 
     {
         //print("Hide call");
 
@@ -134,14 +155,20 @@ public class BoardRenderer {
         }
     }
 
-    void ShowBoard(GameManagerScript game_manager, int[] visible)
+    /// <summary>
+    /// Shows all the chunks in a rectangle between two points
+    /// </summary>
+    /// <param name="game_manager"></param>
+    /// <param name="topLeft">Top left point of bounding rectangle</param>
+    /// <param name="bottomRight">Bottom right point of bounding rectangle</param>
+    void ShowBoard(GameManagerScript game_manager, Vector2Int topLeft, Vector2Int bottomRight)
     {
         List<Tuple<int, int>> new_showing = new List<Tuple<int, int>>();
         List<Tuple<int, int>> new_new_showing = new List<Tuple<int, int>>();
 
-        for (int x = visible[0]; x <= visible[2]; x++)
+        for (int x = topLeft.x; x <= bottomRight.x; x++)
         {
-            for (int y = visible[1]; y <= visible[3]; y++)
+            for (int y = topLeft.y; y <= bottomRight.y; y++)
             {
                 if (Showing.Contains(new Tuple<int, int>(x, y)))
                 {
@@ -150,7 +177,7 @@ public class BoardRenderer {
                 }
                 else
                 {
-                    Show(x, y);
+                    ShowChunk(x, y);
                     new_showing.Add(new Tuple<int, int>(x, y));
                     new_new_showing.Add(new Tuple<int, int>(x, y));
                 }
@@ -160,7 +187,7 @@ public class BoardRenderer {
 
         foreach (Tuple<int, int> chunk_pos in Showing)
         {
-            Hide(chunk_pos.Item1, chunk_pos.Item2);
+            HideChunk(chunk_pos.Item1, chunk_pos.Item2);
         }
 
         Showing = new_showing;
@@ -178,6 +205,7 @@ public class BoardRenderer {
         game_manager.menuController.UpdateScore(game_manager.SavePrefs.Score);
     }
 
+    /*
     Tuple<Vector2Int, Vector2Int> GetPos(Vector2Int chunkPos, Vector2Int pos)
     {
         if (pos.x >= ChunkSize) { pos = new Vector2Int(0, pos.y); chunkPos += new Vector2Int(1, 0); }
@@ -186,25 +214,29 @@ public class BoardRenderer {
         else if (pos.y < 0) { pos = new Vector2Int(pos.x, ChunkSize - 1); chunkPos += new Vector2Int(0, 1); }
         return new Tuple<Vector2Int, Vector2Int>(chunkPos, pos);
     }
+    */
 
+    /// <summary>
+    /// Renders the board
+    /// </summary>
     public void Render(){
         float vert_extent = _gameManager.cam.orthographicSize;
         float horz_extent = vert_extent * Screen.width / Screen.height;
 
-        Vector3 min = _gameManager.cam.transform.position - new Vector3(horz_extent, vert_extent, _gameManager.cam.transform.position.z);
-        Vector3 max = _gameManager.cam.transform.position + new Vector3(horz_extent+2, vert_extent+2, -_gameManager.cam.transform.position.z);
+        Vector3 min = _gameManager.cam.transform.position - new Vector3(horz_extent, vert_extent, _gameManager.cam.transform.position.z)*1.2f;
+        Vector3 max = _gameManager.cam.transform.position + new Vector3(horz_extent, vert_extent, -_gameManager.cam.transform.position.z)*1.2f;
 
         Vector3Int minPos = Vector3Int.FloorToInt((min + new Vector3(ChunkSize / 2, ChunkSize / 2)) / ChunkSize);// - new Vector3Int(1, 1, 0);
-        Vector3Int maxPos = Vector3Int.FloorToInt((max + new Vector3(ChunkSize / 2, ChunkSize / 2)) / ChunkSize);// + new Vector3Int(1, 1, 0);
+        Vector3Int maxPos = Vector3Int.CeilToInt((max - new Vector3(ChunkSize / 2, ChunkSize / 2)) / ChunkSize);// + new Vector3Int(1, 1, 0);
 
-        int[] new_vis = new int[4] { minPos[0], minPos[1], maxPos[0], maxPos[1] };
+        Vector2Int new_vis_min = (Vector2Int)minPos;
+        Vector2Int new_vis_max = (Vector2Int)maxPos;
 
-        if (new_vis != _gameManager.visible)
+        if (new_vis_min != _gameManager.MinVisible || new_vis_max != _gameManager.MaxVisible)
         {
-            _gameManager.visible = new_vis;
-            ShowBoard(_gameManager, _gameManager.visible);    
+            _gameManager.MinVisible = new_vis_min;
+            _gameManager.MaxVisible = new_vis_max;
+            ShowBoard(_gameManager, _gameManager.MinVisible, _gameManager.MaxVisible);    
         }
-
-        
     }
 }

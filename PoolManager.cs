@@ -8,6 +8,11 @@ public class PoolManager: MonoBehaviour {
     public Transform PoolParent;
     public SpriteRenderer prefab;
 
+    /// <summary>
+    /// Tries to get a SpriteRenderer from the pool, if the pool is empty, a new SpriteRenderer is created
+    /// </summary>
+    /// <param name="sprite">Sprite given to SpriteRenderer</param>
+    /// <returns>SpriteRenderer</returns>
     public SpriteRenderer PullSprite(Sprite sprite)
     {
         SpriteRenderer s;
@@ -17,17 +22,27 @@ public class PoolManager: MonoBehaviour {
         else{
             s = Instantiate(prefab.gameObject).GetComponent<SpriteRenderer>();
             s.transform.SetParent(PoolParent);
+            s.gameObject.SetActive(true);
         }
 
         s.sprite = sprite;
         //s.transform.localScale = scale;
-        s.gameObject.SetActive(true);
+        s.enabled = true;
         return s;
     }
 
-    public void ReleaseSprite(SpriteRenderer s) 
+    /// <summary>
+    /// Marks a SpriteRenderer as no longer in use allowing it to be pulled by other processes
+    /// </summary>
+    /// <param name="spriteRenderer">The SpriteRenderer to be released</param>
+    public void ReleaseSprite(SpriteRenderer spriteRenderer) 
     {
-        s.gameObject.SetActive(false);
-        Pool.Enqueue(s);
+        spriteRenderer.enabled = false;
+        Pool.Enqueue(spriteRenderer);
+    }
+
+    private void LateUpdate()
+    {
+        
     }
 }

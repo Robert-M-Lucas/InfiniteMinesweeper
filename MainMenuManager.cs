@@ -54,7 +54,7 @@ public class MainMenuManager : MonoBehaviour
     {
         PlayerPrefs.SetInt("Premium", 1);
         // Debug.Log(Application.persistentDataPath);
-        VersionText.text = "V_" + Application.version;
+        VersionText.text = Application.version;
         PlayerPrefs.SetFloat("brate", -1);
         FadeImage.SetActive(true);
         StartCoroutine(HideFade());

@@ -16,7 +16,7 @@ public class CameraShake : MonoBehaviour
         _startPos = transform.position;
     }
 
-    IEnumerator Shake()
+    IEnumerator ShakeCoroutine()
     {
         _startPos = transform.position;
         for (int i = 0; i < 5; i++)
@@ -27,9 +27,9 @@ public class CameraShake : MonoBehaviour
         transform.position = _startPos;
     }
 
-    public void ShakeMe()
+    public void Shake()
     {
-        StartCoroutine(Shake());
+        StartCoroutine(ShakeCoroutine());
     }
 
 }

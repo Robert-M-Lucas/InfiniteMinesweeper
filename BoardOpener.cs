@@ -4,52 +4,56 @@ using System.Collections;
 
 public static class BoardOpener
 {
-    public static void Open(GameManagerScript game_manager, Vector2Int chunk_pos, Vector2Int pos)
+    /// <summary>
+    /// Starts opening the board from a specified cell
+    /// </summary>
+    /// <param name="gameManager">Game Manager</param>
+    /// <param name="chunkPos">Chunk to start opening from</param>
+    /// <param name="cellPos">Cell to start opening from</param>
+    public static void Open(GameManagerScript gameManager, Vector2Int chunkPos, Vector2Int cellPos)
     {
-        if (game_manager.cursor == 0) // Default cursor
-        if (game_manager.cursor == 0) // Default cursor
+        if (gameManager.cursor == 0) // Default cursor
         {
             // If new game guarantee 3x3 around first click is safe
-            if (game_manager.newGame)
+            if (gameManager.newGame)
             {
-                game_manager.newGame = false;
-                ChangeCell(game_manager, CellValues.CLOSED, chunk_pos, pos);
-                foreach (Vector2Int move in Vector2IntExt.Around)
+                gameManager.newGame = false;
+                foreach (Vector2Int move in Vector2IntExt.AroundAndCentre)
                 {
-                    ChangeCell(game_manager, CellValues.CLOSED, chunk_pos, pos + move);
+                    ChangeCell(gameManager, CellValues.CLOSED, chunkPos, cellPos + move);
                 }
             }
             // If tapped on number
-            if (CellValues.IsNumber(GetCell(game_manager, chunk_pos, pos)))
+            if (CellValues.IsNumber(GetCell(gameManager, chunkPos, cellPos)))
             {
                 foreach (Vector2Int move in Vector2IntExt.Around)
                 {
-                    Ant(game_manager, pos + move, chunk_pos, false);
+                    Ant(gameManager, cellPos + move, chunkPos, false);
                 }
             }
             // If tapped bomb
-            else if (GetCell(game_manager, chunk_pos, pos) == CellValues.BOMB_CLOSED)
+            else if (GetCell(gameManager, chunkPos, cellPos) == CellValues.BOMB_CLOSED)
             {
-                game_manager.SavePrefs.Score -= 500;
-                game_manager.menuController.UpdateScore(game_manager.SavePrefs.Score);
-                game_manager.shake.ShakeMe();
-                ChangeCell(game_manager, 0xD, chunk_pos, pos);
+                gameManager.SavePrefs.Score -= 500;
+                gameManager.menuController.UpdateScore(gameManager.SavePrefs.Score);
+                gameManager.shake.Shake();
+                ChangeCell(gameManager, 0xD, chunkPos, cellPos);
                 return;
             }
             else
             {
-                Ant(game_manager, pos, chunk_pos,false);
+                Ant(gameManager, cellPos, chunkPos,false);
             }
             
-            game_manager.menuController.UpdateScore(game_manager.SavePrefs.Score);
+            gameManager.menuController.UpdateScore(gameManager.SavePrefs.Score);
         }
-        else if (game_manager.cursor == 1) // Flag cursor
+        else if (gameManager.cursor == 1) // Flag cursor
         {
-            ChangeCell(game_manager, CellValues.ToggleFlag(GetCell(game_manager, chunk_pos, pos)), chunk_pos, pos);
+            ChangeCell(gameManager, CellValues.ToggleFlag(GetCell(gameManager, chunkPos, cellPos)), chunkPos, cellPos);
         }
         else // Question cursor
         {
-            ChangeCell(game_manager, CellValues.ToggleQuestion(GetCell(game_manager, chunk_pos, pos)), chunk_pos, pos);
+            ChangeCell(gameManager, CellValues.ToggleQuestion(GetCell(gameManager, chunkPos, cellPos)), chunkPos, cellPos);
         }
 
         /*
@@ -65,94 +69,106 @@ public static class BoardOpener
         */
     }
 
-    static void ChangeCell (GameManagerScript game_manager, byte new_value, Vector2Int chunk_pos, Vector2Int pos)
+    /// <summary>
+    /// Changes the value of a cell
+    /// </summary>
+    /// <param name="gameManager">Game Manager</param>
+    /// <param name="newValue">New value of the cell</param>
+    /// <param name="chunkPos">Chunk containing the cell</param>
+    /// <param name="cellPos">Cell position</param>
+    static void ChangeCell (GameManagerScript gameManager, byte newValue, Vector2Int chunkPos, Vector2Int cellPos)
     {
-        if (pos.x >= game_manager.boardRenderer.ChunkSize) { pos = new Vector2Int(0, pos.y); chunk_pos += new Vector2Int(1, 0); }
-        else if (pos.x < 0) { pos = new Vector2Int(game_manager.boardRenderer.ChunkSize - 1, pos.y); chunk_pos -= new Vector2Int(1, 0); }
-        if (pos.y >= game_manager.boardRenderer.ChunkSize) { pos = new Vector2Int(pos.x, 0); chunk_pos -= new Vector2Int(0, 1); }
-        else if (pos.y < 0) { pos = new Vector2Int(pos.x, game_manager.boardRenderer.ChunkSize - 1); chunk_pos += new Vector2Int(0, 1); }
+        if (cellPos.x >= gameManager.boardRenderer.ChunkSize) { cellPos = new Vector2Int(0, cellPos.y); chunkPos += new Vector2Int(1, 0); }
+        else if (cellPos.x < 0) { cellPos = new Vector2Int(gameManager.boardRenderer.ChunkSize - 1, cellPos.y); chunkPos -= new Vector2Int(1, 0); }
+        if (cellPos.y >= gameManager.boardRenderer.ChunkSize) { cellPos = new Vector2Int(cellPos.x, 0); chunkPos -= new Vector2Int(0, 1); }
+        else if (cellPos.y < 0) { cellPos = new Vector2Int(cellPos.x, gameManager.boardRenderer.ChunkSize - 1); chunkPos += new Vector2Int(0, 1); }
 
-        byte cells2 = game_manager.boardRenderer.Board[new Tuple<int,int>(chunk_pos.x, chunk_pos.y)].Data[(pos.y * (game_manager.boardRenderer.ChunkSize / 2)) + pos.x / 2];
+        byte cells2 = gameManager.boardRenderer.Board[new Tuple<int,int>(chunkPos.x, chunkPos.y)].Data[(cellPos.y * (gameManager.boardRenderer.ChunkSize / 2)) + cellPos.x / 2];
 
-        if (pos.x % 2 == 0)
+        if (cellPos.x % 2 == 0)
         {
-            game_manager.boardRenderer.Board[new Tuple<int, int>(chunk_pos.x, chunk_pos.y)].Data[(pos.y * (game_manager.boardRenderer.ChunkSize / 2)) + pos.x / 2] = (byte)((cells2 & 0xF) + (new_value << 4));
+            gameManager.boardRenderer.Board[new Tuple<int, int>(chunkPos.x, chunkPos.y)].Data[(cellPos.y * (gameManager.boardRenderer.ChunkSize / 2)) + cellPos.x / 2] = (byte)((cells2 & 0xF) + (newValue << 4));
         }
         else 
         {
-            game_manager.boardRenderer.Board[new Tuple<int, int>(chunk_pos.x, chunk_pos.y)].Data[(pos.y * (game_manager.boardRenderer.ChunkSize / 2)) + pos.x / 2] = (byte)(((cells2 >> 4 & 0xF) << 4) + new_value);
+            gameManager.boardRenderer.Board[new Tuple<int, int>(chunkPos.x, chunkPos.y)].Data[(cellPos.y * (gameManager.boardRenderer.ChunkSize / 2)) + cellPos.x / 2] = (byte)(((cells2 >> 4 & 0xF) << 4) + newValue);
         }
 
         //Hide(ChunkPos.x, ChunkPos.y);
         //Show(ChunkPos.x, ChunkPos.y);
 
-        game_manager.poolManager.ReleaseSprite(game_manager.boardRenderer.ShowingCache[new Tuple<int, int>(chunk_pos.x, chunk_pos.y)][(pos.y * game_manager.boardRenderer.ChunkSize) + pos.x]);
+        gameManager.poolManager.ReleaseSprite(gameManager.boardRenderer.ShowingCache[new Tuple<int, int>(chunkPos.x, chunkPos.y)][(cellPos.y * gameManager.boardRenderer.ChunkSize) + cellPos.x]);
         
-        game_manager.boardRenderer.ShowingCache[new Tuple<int, int>(chunk_pos.x, chunk_pos.y)][(pos.y * game_manager.boardRenderer.ChunkSize) + pos.x] =
-        game_manager.boardRenderer.RenderCell(new_value, chunk_pos.x, chunk_pos.y, pos.x, pos.y);
+        gameManager.boardRenderer.ShowingCache[new Tuple<int, int>(chunkPos.x, chunkPos.y)][(cellPos.y * gameManager.boardRenderer.ChunkSize) + cellPos.x] =
+        gameManager.boardRenderer.RenderCell(newValue, chunkPos.x, chunkPos.y, cellPos.x, cellPos.y);
     }
 
-    public static byte GetCell(GameManagerScript game_manager, Vector2Int chunk_pos, Vector2Int pos)
+    /// <summary>
+    /// Gets the value of a cell
+    /// </summary>
+    /// <param name="gameManager">Game Manager</param>
+    /// <param name="chunkPos">Chunk containing the cell</param>
+    /// <param name="cellPos">Cell position</param>
+    /// <returns></returns>
+    public static byte GetCell(GameManagerScript gameManager, Vector2Int chunkPos, Vector2Int cellPos)
     {
-        BoardRenderer boardRenderer = game_manager.boardRenderer;
-        if (pos.x >= boardRenderer.ChunkSize) { pos = new Vector2Int(0, pos.y); chunk_pos += new Vector2Int(1, 0); }
-        else if (pos.x < 0) { pos = new Vector2Int(boardRenderer.ChunkSize - 1, pos.y); chunk_pos -= new Vector2Int(1, 0); }
-        if (pos.y >= boardRenderer.ChunkSize) { pos = new Vector2Int(pos.x, 0); chunk_pos -= new Vector2Int(0, 1); }
-        else if (pos.y < 0) { pos = new Vector2Int(pos.x, boardRenderer.ChunkSize - 1); chunk_pos += new Vector2Int(0, 1); }
+        BoardRenderer boardRenderer = gameManager.boardRenderer;
+        if (cellPos.x >= boardRenderer.ChunkSize) { cellPos = new Vector2Int(0, cellPos.y); chunkPos += new Vector2Int(1, 0); }
+        else if (cellPos.x < 0) { cellPos = new Vector2Int(boardRenderer.ChunkSize - 1, cellPos.y); chunkPos -= new Vector2Int(1, 0); }
+        if (cellPos.y >= boardRenderer.ChunkSize) { cellPos = new Vector2Int(cellPos.x, 0); chunkPos -= new Vector2Int(0, 1); }
+        else if (cellPos.y < 0) { cellPos = new Vector2Int(cellPos.x, boardRenderer.ChunkSize - 1); chunkPos += new Vector2Int(0, 1); }
 
-        if (!boardRenderer.Board.ContainsKey(new Tuple<int, int>(chunk_pos.x, chunk_pos.y))) { boardRenderer.RenderBoard(chunk_pos.x, chunk_pos.y); }
+        if (!boardRenderer.Board.ContainsKey(new Tuple<int, int>(chunkPos.x, chunkPos.y))) { boardRenderer.RenderBoard(chunkPos.x, chunkPos.y); }
 
-        byte cells2 = boardRenderer.Board[new Tuple<int, int>(chunk_pos.x, chunk_pos.y)].Data[(pos.y * (boardRenderer.ChunkSize / 2)) + pos.x / 2];
+        byte cells2 = boardRenderer.Board[new Tuple<int, int>(chunkPos.x, chunkPos.y)].Data[(cellPos.y * (boardRenderer.ChunkSize / 2)) + cellPos.x / 2];
         byte[] cellsplit = new byte[2] { (byte)(cells2 >> 4 & 0xF), (byte)(cells2 & 0xF) };
-        return cellsplit[pos.x % 2];
+        return cellsplit[cellPos.x % 2];
     }
 
-    public static void Ant(GameManagerScript game_manager, Vector2Int pos, Vector2Int chunk_pos, bool avoid_bomb = true)
+    public static void Ant(GameManagerScript gameManager, Vector2Int cellPos, Vector2Int chunkPos, bool avoidBomb = true)
     {
-        if (pos.x >= game_manager.boardRenderer.ChunkSize) { pos = new Vector2Int(0, pos.y); chunk_pos += new Vector2Int(1, 0); }
-        else if (pos.x < 0) { pos = new Vector2Int(game_manager.boardRenderer.ChunkSize - 1, pos.y); chunk_pos -= new Vector2Int(1, 0); }
-        if (pos.y >= game_manager.boardRenderer.ChunkSize) { pos = new Vector2Int(pos.x, 0); chunk_pos -= new Vector2Int(0, 1); }
-        else if (pos.y < 0) { pos = new Vector2Int(pos.x, game_manager.boardRenderer.ChunkSize - 1); chunk_pos += new Vector2Int(0, 1); }
+        if (cellPos.x >= gameManager.boardRenderer.ChunkSize) { cellPos = new Vector2Int(0, cellPos.y); chunkPos += new Vector2Int(1, 0); }
+        else if (cellPos.x < 0) { cellPos = new Vector2Int(gameManager.boardRenderer.ChunkSize - 1, cellPos.y); chunkPos -= new Vector2Int(1, 0); }
+        if (cellPos.y >= gameManager.boardRenderer.ChunkSize) { cellPos = new Vector2Int(cellPos.x, 0); chunkPos -= new Vector2Int(0, 1); }
+        else if (cellPos.y < 0) { cellPos = new Vector2Int(cellPos.x, gameManager.boardRenderer.ChunkSize - 1); chunkPos += new Vector2Int(0, 1); }
 
-        if (!game_manager.boardRenderer.Showing.Contains(new Tuple<int, int>(chunk_pos.x, chunk_pos.y))) {
-            game_manager.boardRenderer.RenderBoard(chunk_pos.x, chunk_pos.y).OpenFrom.Add(new Tuple<int, int>(pos.x, pos.y));
+        if (!gameManager.boardRenderer.Showing.Contains(new Tuple<int, int>(chunkPos.x, chunkPos.y))) {
+            gameManager.boardRenderer.RenderBoard(chunkPos.x, chunkPos.y).OpenFrom.Add(new Tuple<int, int>(cellPos.x, cellPos.y));
             return; 
         }
 
-        
-
-        byte cell = GetCell(game_manager, chunk_pos, pos);
+        byte cell = GetCell(gameManager, chunkPos, cellPos);
         if (cell == CellValues.CLOSED)
         {
             byte neigbours = 0;
             foreach (Vector2Int move in Vector2IntExt.Around)
             {
-                if (CellValues.IsBomb(GetCell(game_manager, chunk_pos, pos + move))) { neigbours += 1; }
+                if (CellValues.IsBomb(GetCell(gameManager, chunkPos, cellPos + move))) { neigbours ++; }
             }
 
             if (neigbours == 0) { 
                 neigbours = CellValues.OPEN;
             }
 
-            game_manager.SavePrefs.Score += 1;        
+            gameManager.SavePrefs.Score += 1;        
 
-            ChangeCell(game_manager, neigbours, chunk_pos, pos);
+            ChangeCell(gameManager, neigbours, chunkPos, cellPos);
 
             if (neigbours == CellValues.OPEN)
             {
                 foreach (Vector2Int move in Vector2IntExt.Around)
                 {
-                    Ant(game_manager, pos + move, chunk_pos);
+                    Ant(gameManager, cellPos + move, chunkPos);
                 }
             }
         }
-        else if (cell == CellValues.BOMB_CLOSED && avoid_bomb == false)
+        else if (cell == CellValues.BOMB_CLOSED && avoidBomb == false)
         {
             // Bomb
-            game_manager.SavePrefs.Score -= 500;
-            game_manager.menuController.UpdateScore(game_manager.SavePrefs.Score);
-            game_manager.shake.ShakeMe();
-            ChangeCell(game_manager, CellValues.BOMB_OPEN, chunk_pos, pos);
+            gameManager.SavePrefs.Score -= 500;
+            gameManager.menuController.UpdateScore(gameManager.SavePrefs.Score);
+            gameManager.shake.Shake();
+            ChangeCell(gameManager, CellValues.BOMB_OPEN, chunkPos, cellPos);
         }
     }
 }

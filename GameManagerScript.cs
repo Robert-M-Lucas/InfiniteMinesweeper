@@ -9,7 +9,6 @@ using UnityEngine.Analytics;
 using Debug = UnityEngine.Debug;
 using System.Threading;
 using System.Diagnostics;
-using static UnityEditor.PlayerSettings;
 
 
 public class GameManagerScript : MonoBehaviour
@@ -19,7 +18,8 @@ public class GameManagerScript : MonoBehaviour
 
     private Dictionary<Tuple<int, int>, Chunk> board_copy = new Dictionary<Tuple<int, int>, Chunk>();
 
-    public int[] visible = new int[] { 0, 0, 0, 0 };
+    public Vector2Int MinVisible;
+    public Vector2Int MaxVisible;
 
     public Camera cam;
 
@@ -70,7 +70,6 @@ public class GameManagerScript : MonoBehaviour
 
     void Start()
     {
-        OnClickPrefab.SetActive(true);
         boardRenderer = new BoardRenderer(this);
         SaveSlot = PlayerPrefs.GetInt("SaveSlot");
         SaveSystem.TryLoad(this);
@@ -95,17 +94,15 @@ public class GameManagerScript : MonoBehaviour
     {
         if (paused) { return; }
 
-        Tuple<Vector2Int, Vector2Int> poss = boardRenderer.PosToPos(tap_pos);
+        Tuple<Vector2Int, Vector2Int> poss = boardRenderer.ScreenToCellPos(tap_pos);
 
-
-        Stopwatch stopwatch = new Stopwatch();
         BoardOpener.Open(this, poss.Item1, poss.Item2);
     }
 
     public void OnTapDown(Vector2 tap_pos) {
         if (cursor != 0) { return; }
 
-        Tuple<Vector2Int, Vector2Int> poss = boardRenderer.PosToPos(tap_pos);
+        Tuple<Vector2Int, Vector2Int> poss = boardRenderer.ScreenToCellPos(tap_pos);
         if (BoardOpener.GetCell(this, poss.Item1, poss.Item2) == CellValues.CLOSED || BoardOpener.GetCell(this, poss.Item1, poss.Item2) == CellValues.BOMB_CLOSED)
         {
             OnClickPrefab.transform.position = new Vector3(((poss.Item1.x * boardRenderer.ChunkSize) - (boardRenderer.ChunkSize / 2)) + poss.Item2.x,

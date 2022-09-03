@@ -5,6 +5,13 @@ using System.Runtime.Serialization.Formatters.Binary;
 
 public static class ObjectCopier
 {
+    /// <summary>
+    /// Clones a serializable object
+    /// </summary>
+    /// <typeparam name="T">Type of the object</typeparam>
+    /// <param name="source">Object to be copied</param>
+    /// <returns>New object</returns>
+    /// <exception cref="ArgumentException">Throws ArgumentException if object is not serializable</exception>
     public static T Clone<T>(T source)
     {
         if (!typeof(T).IsSerializable)
